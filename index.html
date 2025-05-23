@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>People Pairing Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom styles for a bit more polish */
+        .pair-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .pair-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .btn-primary {
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+        }
+        .btn-primary:active {
+            transform: translateY(0px);
+        }
+        .error-message {
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 to-slate-800 min-h-screen flex flex-col items-center justify-center p-4 text-slate-100">
+
+    <div class="bg-slate-800 shadow-2xl rounded-xl p-6 md:p-10 w-full max-w-2xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-sky-400">Name Pairing Generator</h1>
+            <p class="text-slate-400 mt-2">Enter names separated by commas. We'll do the rest!</p>
+        </header>
+
+        <main>
+            <div class="mb-6">
+                <label for="namesInput" class="block text-sm font-medium text-slate-300 mb-2">Enter Names:</label>
+                <textarea id="namesInput" rows="4" class="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-500" placeholder="e.g., Alice, Bob, Charlie, Diana, Eve"></textarea>
+            </div>
+
+            <button id="generatePairsButton" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md btn-primary focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-opacity-50">
+                Generate Pairs
+            </button>
+
+            <div id="messageArea" class="mt-6 text-center">
+                </div>
+
+            <div id="resultsArea" class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                </div>
+        </main>
+
+        <footer class="text-center mt-10 text-sm text-slate-500">
+            <p>&copy; 2024 People Pairing Tool. Create amazing teams!</p>
+        </footer>
+    </div>
+
+    <script>
+        const namesInput = document.getElementById('namesInput');
+        const generatePairsButton = document.getElementById('generatePairsButton');
+        const resultsArea = document.getElementById('resultsArea');
+        const messageArea = document.getElementById('messageArea');
+
+        generatePairsButton.addEventListener('click', () => {
+            // Clear previous results and messages
+            resultsArea.innerHTML = '';
+            messageArea.innerHTML = '';
+
+            const namesString = namesInput.value.trim();
+            if (!namesString) {
+                displayMessage('Please enter some names.', 'error');
+                return;
+            }
+
+            let names = namesString.split(',')
+                                .map(name => name.trim())
+                                .filter(name => name !== ''); // Remove empty strings
+
+            if (names.length < 2) {
+                displayMessage('Please enter at least two names to form a pair.', 'error');
+                return;
+            }
+
+            // Shuffle the names array for randomness
+            names = shuffleArray(names);
+
+            const groups = [];
+            if (names.length % 2 === 0) {
+                // Even number of people: create pairs
+                for (let i = 0; i < names.length; i += 2) {
+                    groups.push([names[i], names[i + 1]]);
+                }
+            } else {
+                // Odd number of people: create one trio and then pairs
+                if (names.length >= 3) {
+                    groups.push([names[0], names[1], names[2]]); // First three form a trio
+                    for (let i = 3; i < names.length; i += 2) {
+                        groups.push([names[i], names[i + 1]]);
+                    }
+                } else {
+                    // This case should ideally be caught by names.length < 2,
+                    // but as a fallback, if it's 1 (odd), it can't form a trio or pair.
+                    // The initial check for names.length < 2 handles this.
+                    // If somehow names.length is 1 here, it will just be that one person.
+                    // For simplicity, we'll assume the previous check handles this.
+                    // If names.length is 1, it will just be displayed as a single person group.
+                     groups.push([names[0]]);
+                }
+            }
+
+            displayGroups(groups);
+        });
+
+        /**
+         * Shuffles array in place.
+         * @param {Array} array items An array containing the items.
+         */
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]]; // ES6 destructuring swap
+            }
+            return array;
+        }
+
+        /**
+         * Displays a message to the user.
+         * @param {string} message The message to display.
+         * @param {string} type 'error' or 'success' or 'info'.
+         */
+        function displayMessage(message, type = 'info') {
+            messageArea.innerHTML = ''; // Clear previous messages
+            const messageDiv = document.createElement('div');
+            messageDiv.textContent = message;
+            if (type === 'error') {
+                messageDiv.className = 'text-red-400 p-3 bg-red-900/30 rounded-md error-message';
+            } else if (type === 'success') {
+                messageDiv.className = 'text-green-400 p-3 bg-green-900/30 rounded-md';
+            } else {
+                messageDiv.className = 'text-sky-400 p-3 bg-sky-900/30 rounded-md';
+            }
+            messageArea.appendChild(messageDiv);
+        }
+
+        /**
+         * Displays the generated groups on the page.
+         * @param {Array<Array<string>>} groups An array of groups (pairs or a trio).
+         */
+        function displayGroups(groups) {
+            if (groups.length === 0) {
+                displayMessage('No groups could be formed. Check your input.', 'info');
+                return;
+            }
+
+            displayMessage(`Successfully generated ${groups.length} group(s)!`, 'success');
+
+            groups.forEach((group, index) => {
+                const groupCard = document.createElement('div');
+                groupCard.className = 'pair-card bg-slate-700 p-4 rounded-lg shadow-lg border border-slate-600';
+
+                const groupTitle = document.createElement('h3');
+                groupTitle.className = 'text-lg font-semibold mb-2 text-sky-400';
+                if (group.length === 3) {
+                    groupTitle.textContent = `Trio ${index + 1}`;
+                } else if (group.length === 2) {
+                    groupTitle.textContent = `Pair ${index + 1}`;
+                } else {
+                     groupTitle.textContent = `Group ${index + 1}`; // For single person if any
+                }
+                groupCard.appendChild(groupTitle);
+
+                const namesList = document.createElement('ul');
+                namesList.className = 'list-disc list-inside text-slate-300 space-y-1';
+                group.forEach(name => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = name;
+                    namesList.appendChild(listItem);
+                });
+                groupCard.appendChild(namesList);
+                resultsArea.appendChild(groupCard);
+            });
+        }
+
+        // Example names for quick testing
+        // namesInput.value = "Alice, Bob, Charlie, Diana, Eve, Frank, Grace";
+    </script>
+</body>
+</html>
